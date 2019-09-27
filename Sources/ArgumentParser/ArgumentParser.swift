@@ -55,8 +55,8 @@ public struct ArgumentParser {
     public func showHelp<Target: TextOutputStream>(to output: Target) {
         var output = output
         let width = 24
-        output.write("USAGE: \(usage)")
-        output.write("OPTIONS:")
+        output.write("USAGE: \(usage)\n")
+        output.write("OPTIONS:\n")
         options.forEach { (opt) in
             let name = "\(opt.name)\(opt.anotherName == nil ? "" : ", \(opt.anotherName!)")"
             output.write("  \(name)")
@@ -69,7 +69,9 @@ public struct ArgumentParser {
                 output.write(" ")
             }
             output.write(opt.description)
+            output.write("\n")
         }
+        output.write("\n")
     }
     
 }
