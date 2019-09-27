@@ -1,0 +1,23 @@
+name: Ubuntu 18.04 Swift 5.1
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-18.04
+    
+    steps:
+    - uses: actions/checkout@master
+    - name: Install dependencies
+      run: sudo apt-get install -yq libssl-dev zlib1g-dev clang libicu-dev
+    - name: Download Swift
+      run: curl https://swift.org/builds/swift-5.1-release/ubuntu1804/swift-5.1-RELEASE/swift-5.1-RELEASE-ubuntu18.04.tar.gz -O
+    - name: Unpack Swift
+      run: tar xzf swift-5.1-RELEASE-ubuntu18.04.tar.gz
+    - name: Debug build
+      run: swift-5.1-RELEASE-ubuntu18.04/usr/bin/swift build
+    - name: Test
+      run: swift-5.1-RELEASE-ubuntu18.04/usr/bin/swift test
+    - name: Release build
+      run: swift-5.1-RELEASE-ubuntu18.04/usr/bin/swift build -c release
