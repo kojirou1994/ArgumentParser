@@ -23,10 +23,10 @@ public struct ArgumentParser {
         var dic = [String : Option]()
         var inputs = [String]()
         for a in options {
-            assert(dic[a.name] == nil)
+            assert(dic[a.name] == nil, "duplicate argument: \(a.name)")
             dic[a.name] = a
             if let anotherName = a.anotherName {
-                assert(dic[anotherName] == nil)
+                assert(dic[anotherName] == nil, "duplicate argument: \(anotherName)")
                 dic[anotherName] = a
             }
         }
@@ -82,6 +82,7 @@ public struct Option {
     public let didGetValue: ArgumentHandler
     
     public init(name: String, anotherName: String? = nil, requireValue: Bool, description: String, didGetValue: @escaping ArgumentHandler) {
+        assert(!name.isEmpty)
         self.name = name
         self.anotherName = anotherName
         self.requireValue = requireValue
@@ -104,6 +105,28 @@ extension Option: Comparable {
 
 public protocol OptionValue {
     init(argument: String) throws
+}
+
+extension OptionValue where Self: RawRepresentable, Self.RawValue == String {
+    
+    public init(argument: String) throws {
+        guard let v = Self.init(rawValue: argument) else {
+            throw ArgumentParserError.invalidOptionValue(argument: argument, type: String(describing: Self.self))
+        }
+        self = v
+    }
+    
+}
+
+extension OptionValue where Self: RawRepresentable, Self.RawValue: OptionValue {
+    
+    public init(argument: String) throws {
+        guard let v = Self.init(rawValue: try RawValue(argument: argument)) else {
+            throw ArgumentParserError.invalidOptionValue(argument: argument, type: String(describing: Self.self))
+        }
+        self = v
+    }
+    
 }
 
 extension Bool: OptionValue {
