@@ -1,7 +1,7 @@
 public enum ArgumentParserError: Error {
     case nonRequiredValue(String)
     case unknownOption(String)
-    case invalidOptionValue(String, String)
+    case invalidOptionValue(argument: String, type: String)
 }
 
 public typealias ArgumentHandler = (String) throws -> ()
@@ -12,24 +12,22 @@ public struct ArgumentParser {
     
     public let usage: String
     
-    public let positionalInput: ArgumentHandler
-    
-    public init(usage: String, options: [Option], positionalInput: @escaping ArgumentHandler) {
+    public init(usage: String, options: [Option]) {
         self.usage = usage
         self.options = options.sorted()
-        self.positionalInput = positionalInput
     }
-    
-    /// Parse arguments.
-    ///
-    /// - Parameter arguments: cli arguments, Sequence of String.
-    /// - Throws: ArgumentParserError or other errors from the ArgumentHandlers
-    public func parse<C>(arguments: C) throws where C: Sequence, C.Element == String {
+
+    @discardableResult
+    public func parse<C>(arguments: C) throws -> [String]
+        where C: Sequence, C.Element == String {
         var dic = [String : Option]()
+        var inputs = [String]()
         for a in options {
+            assert(dic[a.name] == nil)
             dic[a.name] = a
-            if a.anotherName != nil {
-                dic[a.anotherName!] = a
+            if let anotherName = a.anotherName {
+                assert(dic[anotherName] == nil)
+                dic[anotherName] = a
             }
         }
         
@@ -48,27 +46,29 @@ public struct ArgumentParser {
             } else if argument.hasPrefix("-") {
                 throw ArgumentParserError.unknownOption(argument)
             } else {
-                try positionalInput(argument)
+                inputs.append(argument)
             }
         }
+        return inputs
     }
     
-    public func showHelp<Target>(to output: inout Target) where Target : TextOutputStream {
+    public func showHelp<Target: TextOutputStream>(to output: Target) {
+        var output = output
         let width = 24
-        print("USAGE: \(usage)", to: &output)
-        print("OPTIONS:", to: &output)
+        output.write("USAGE: \(usage)")
+        output.write("OPTIONS:")
         options.forEach { (opt) in
             let name = "\(opt.name)\(opt.anotherName == nil ? "" : ", \(opt.anotherName!)")"
-            print("  \(name)", terminator: "", to: &output)
+            output.write("  \(name)")
             var padding = width-name.count
             if padding <= 1 {
                 padding = width
-                print("\n  ", terminator: "", to: &output)
+                output.write("\n  ")
             }
             for _ in 0..<padding {
-                print(" ", terminator: "", to: &output)
+                output.write(" ")
             }
-            print(opt.description, to: &output)
+            output.write(opt.description)
         }
     }
     
@@ -100,7 +100,6 @@ extension Option: Comparable {
         return lhs.name == rhs.name
     }
     
-    
 }
 
 public protocol OptionValue {
@@ -115,7 +114,7 @@ extension Bool: OptionValue {
         case "false":
             self = false
         default:
-            throw ArgumentParserError.invalidOptionValue(argument, "Bool")
+            throw ArgumentParserError.invalidOptionValue(argument: argument, type: "Bool")
         }
     }
 }
@@ -125,7 +124,7 @@ extension Int: OptionValue {
         if let v = Int(argument) {
             self = v
         } else {
-            throw ArgumentParserError.invalidOptionValue(argument, "Int")
+            throw ArgumentParserError.invalidOptionValue(argument: argument, type: "Int")
         }
     }
 }
@@ -135,7 +134,7 @@ extension Double: OptionValue {
         if let v = Double(argument) {
             self = v
         } else {
-            throw ArgumentParserError.invalidOptionValue(argument, "Double")
+            throw ArgumentParserError.invalidOptionValue(argument: argument, type: "Double")
         }
     }
 }

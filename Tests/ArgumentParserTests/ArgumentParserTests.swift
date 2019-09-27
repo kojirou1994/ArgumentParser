@@ -5,12 +5,10 @@ final class ArgumentParserTests: XCTestCase {
     func testExample() {
         let arg = ["-c", "release"]
         var c = "debug"
-        let release = Option.init(short: "-c", long: "--configuration", requireValue: true, description: "build setting") { (v) in
+        let release = Option.init(name: "-c", anotherName: "--configuration", requireValue: true, description: "build setting") { (v) in
             c = v
         }
-        let parser = ArgumentParser.init(options: [release]) { (input) in
-            
-        }
+        let parser = ArgumentParser.init(usage: "", options: [release]) 
         try! parser.parse(arguments: arg)
         XCTAssertEqual(c, "release")
     }
