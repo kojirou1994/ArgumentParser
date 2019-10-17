@@ -59,8 +59,10 @@ public final class ArgumentParser<Argument: ArgumentProtocol> {
         
         init(name: String, anotherName: String? = nil, requireValue: Bool, description: String, valueHandler: @escaping OptionValueHandler) {
             assert(!name.isEmpty)
+            assert(name.hasPrefix("-"))
             if anotherName != nil {
                 assert(!anotherName!.isEmpty)
+                assert(anotherName!.hasPrefix("-"))
             }
             self.name = name
             self.anotherName = anotherName
@@ -77,7 +79,6 @@ public final class ArgumentParser<Argument: ArgumentProtocol> {
     
     public typealias OptionValueHandler = (_ value: String, _ argument: inout Argument) throws -> Void
     
-    @discardableResult
     public func parse<C>(arguments: C) throws -> Argument
     where C: Sequence, C.Element == String {
         // prepare options
@@ -141,7 +142,7 @@ public final class ArgumentParser<Argument: ArgumentProtocol> {
         }
     }
     
-    public func addOptionalValueOption<V: ValueOption>(name: String, anotherName: String?, description: String, keypath: WritableKeyPath<Argument, V?>) {
+    public func addValueOption<V: ValueOption>(name: String, anotherName: String?, description: String, keypath: WritableKeyPath<Argument, V?>) {
         addOption(name: name, anotherName: anotherName, requireValue: true, description: description) { (v, arg) in
             arg[keyPath: keypath] = try .init(argument: v)
         }

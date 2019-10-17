@@ -16,7 +16,7 @@ final class ArgumentParserTests: XCTestCase {
         parser.addValueOption(name: "-c", anotherName: "--configuration", description: "build setting", keypath: \.configuration)
         parser.addFlagOption(name: "-F", anotherName: "--flag", description: "enable flag", keypath: \.flag)
         parser.addFlagOption(name: "--no-flag", anotherName: nil, description: "disable flag", keypath: \.flag, setValue: false)
-        parser.addOptionalValueOption(name: "-O", anotherName: "--optional", description: "test optional", keypath: \.optional)
+        parser.addValueOption(name: "-O", anotherName: "--optional", description: "test optional", keypath: \.optional)
         print(try! parser.parse(arguments: arg))
         var s = ""
         parser.showHelp(to: &s)
