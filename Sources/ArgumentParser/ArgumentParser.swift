@@ -7,13 +7,16 @@ public enum ArgumentParserError: Error {
     case extraPositionalInput(String)
 }
 
-
 public struct ArgumentParserOptions: OptionSet {
     public let rawValue: Int
     
     public init(rawValue: Int) { self.rawValue = rawValue }
     
 //    public static let acceptUnknownOption = Self.init(rawValue: 1 << 0)
+    
+//    public static let trimWhitespaces = Self.init(rawValue: 1 << 1)
+    
+//    public static let dropEmptyArgument = Self.init(rawValue: 1 << 1)
 }
 
 public final class ArgumentParser<Argument: ArgumentProtocol> {
@@ -176,7 +179,7 @@ public final class ArgumentParser<Argument: ArgumentProtocol> {
         }
         switch positionalMode {
         case .subcommand(_):
-            r += " COMMAND"
+            r += " COMMAND [COMMAND_OPTION]"
         case .positionalInputs(_):
             r += " [\(inputName)]"
         case .singleInput(_):
