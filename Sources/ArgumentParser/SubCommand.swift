@@ -2,12 +2,18 @@ public protocol SubCommand: ValueOption, Hashable {
     
     static var informationDictionary: [String: String] { get }
     
+    static var availableCommands: [Self] { get }
+    
+    var command: String { get }
+    
     var description: String { get }
     
 }
 
-extension SubCommand where Self: CaseIterable & RawRepresentable, Self.RawValue == String {
-    static var informationDictionary: [String: String] {
-        .init(uniqueKeysWithValues: Self.allCases.map { ($0.rawValue, $0.description) })
+extension SubCommand {
+    
+    public static var informationDictionary: [String: String] {
+        .init(uniqueKeysWithValues: Self.availableCommands.map { ($0.command, $0.description) })
     }
+    
 }
