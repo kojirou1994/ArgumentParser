@@ -4,6 +4,7 @@ public enum ArgumentParserError: Error {
     case unallowedPositionalInput(String)
     case invalidSubcommand(String)
     case invalidOptionValue(argument: String, type: String)
+    case extraPositionalInput(String)
 }
 
 
@@ -23,19 +24,24 @@ public final class ArgumentParser<Argument: ArgumentProtocol> {
     
     public let overview: String
     
+    public let inputName: String
+    
     private var positionalMode: PositionalMode?
     
     private typealias SubCommandHandler = (_ command: String, _ commandArguments: [String], _ argument: inout Argument) throws -> Void
     
     private enum PositionalMode {
         case subcommand(SubCommandHandler, information: [String: String])
-        case positionalInput(WritableKeyPath<Argument, [String]>)
+        case positionalInputs(WritableKeyPath<Argument, [String]>)
+        case singleInput(WritableKeyPath<Argument, String>)
     }
     
-    
-    
     public func set(positionalInputKeyPath: WritableKeyPath<Argument, [String]>) {
-        positionalMode = .positionalInput(positionalInputKeyPath)
+        positionalMode = .positionalInputs(positionalInputKeyPath)
+    }
+    
+    public func set(singleInputKeyPath: WritableKeyPath<Argument, String>) {
+        positionalMode = .singleInput(singleInputKeyPath)
     }
     
     public func set<C: SubCommand>(commandKeyPath: WritableKeyPath<Argument, C>, argumentKeyPath: WritableKeyPath<Argument, [String]>) {
@@ -72,9 +78,10 @@ public final class ArgumentParser<Argument: ArgumentProtocol> {
         }
     }
     
-    public init(toolName: String, overview: String) {
+    public init(toolName: String, overview: String, inputName: String = "INPUT") {
         self.toolName = toolName
         self.overview = overview
+        self.inputName = inputName
     }
     
     public typealias OptionValueHandler = (_ value: String, _ argument: inout Argument) throws -> Void
@@ -93,6 +100,7 @@ public final class ArgumentParser<Argument: ArgumentProtocol> {
         }
         
         var result = Argument()
+        var hasSingleInput = false
         
         var iterator = arguments.makeIterator()
         while let currentArgument = iterator.next() {
@@ -110,7 +118,7 @@ public final class ArgumentParser<Argument: ArgumentProtocol> {
                 throw ArgumentParserError.unknownOption(currentArgument)
             } else if let positionalMode = self.positionalMode {
                 switch positionalMode {
-                case .positionalInput(let inputKeyPath):
+                case .positionalInputs(let inputKeyPath):
                     result[keyPath: inputKeyPath].append(currentArgument)
                 case .subcommand(let handler, information: _):
                     var commandArguments = [String]()
@@ -118,6 +126,12 @@ public final class ArgumentParser<Argument: ArgumentProtocol> {
                         commandArguments.append(v)
                     }
                     try handler(currentArgument, commandArguments, &result)
+                case .singleInput(let inputKeyPath):
+                    if hasSingleInput {
+                        throw ArgumentParserError.extraPositionalInput(currentArgument)
+                    }
+                    result[keyPath: inputKeyPath] = currentArgument
+                    hasSingleInput = true
                 }
             } else {
                 throw ArgumentParserError.unallowedPositionalInput(currentArgument)
@@ -163,8 +177,10 @@ public final class ArgumentParser<Argument: ArgumentProtocol> {
         switch positionalMode {
         case .subcommand(_):
             r += " COMMAND"
-        case .positionalInput(_):
-            r += " [INPUT]"
+        case .positionalInputs(_):
+            r += " [\(inputName)]"
+        case .singleInput(_):
+            r += " \(inputName)"
         default:
             break
         }
